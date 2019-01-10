@@ -909,12 +909,17 @@ ghettoVCB() {
     dumpHostInfo
 
     if [[ ${ENABLE_NON_PERSISTENT_NFS} -eq 1 ]] ; then
-        VM_BACKUP_VOLUME="/vmfs/volumes/${NFS_LOCAL_NAME}/${NFS_VM_BACKUP_DIR}"
+
+        if  [[ -z ${NFS_VM_BACKUP_DIR} ]]; then
+            VM_BACKUP_VOLUME="/vmfs/volumes/${NFS_LOCAL_NAME}"
+        else
+            VM_BACKUP_VOLUME="/vmfs/volumes/${NFS_LOCAL_NAME}/${NFS_VM_BACKUP_DIR}"
+        fi
         if [[ "${LOG_LEVEL}" !=  "dryrun" ]] ; then
             #1 = readonly
             #0 = readwrite
             logger "debug" "Mounting NFS: ${NFS_SERVER}:${NFS_MOUNT} to /vmfs/volume/${NFS_LOCAL_NAME}"
-	    if [[ ${ESX_RELEASE} == "5.5.0" ]] || [[ ${ESX_RELEASE} == "6.0.0" || ${ESX_RELEASE} == "6.5.0" || ${ESX_RELEASE} == "6.7.0" ]] ; then
+            if [[ ${ESX_RELEASE} == "5.5.0" ]] || [[ ${ESX_RELEASE} == "6.0.0" || ${ESX_RELEASE} == "6.5.0" || ${ESX_RELEASE} == "6.7.0" ]] ; then
                 ${VMWARE_CMD} hostsvc/datastore/nas_create "${NFS_LOCAL_NAME}" "${NFS_VERSION}" "${NFS_MOUNT}" 0 "${NFS_SERVER}"
             else
                 ${VMWARE_CMD} hostsvc/datastore/nas_create "${NFS_LOCAL_NAME}" "${NFS_SERVER}" "${NFS_MOUNT}" 0
@@ -1080,10 +1085,14 @@ ghettoVCB() {
                     fi
                 fi
             fi
-    	    #nfs case and backup to root path of your NFS mount
+            #nfs case and backup to root path of your NFS mount
             if [[ ${ENABLE_NON_PERSISTENT_NFS} -eq 1 ]] ; then
-                BACKUP_DIR="/vmfs/volumes/${NFS_LOCAL_NAME}/${NFS_VM_BACKUP_DIR}/${VM_NAME}"
-                if [[ -z ${VM_NAME} ]] || [[ -z ${NFS_LOCAL_NAME} ]] || [[ -z ${NFS_VM_BACKUP_DIR} ]]; then
+                if  [[ -z ${NFS_VM_BACKUP_DIR} ]]; then
+                    BACKUP_DIR="/vmfs/volumes/${NFS_LOCAL_NAME}/${VM_NAME}"
+                else
+                    BACKUP_DIR="/vmfs/volumes/${NFS_LOCAL_NAME}/${NFS_VM_BACKUP_DIR}/${VM_NAME}"
+                fi
+                if [[ -z ${VM_NAME} ]] || [[ -z ${NFS_LOCAL_NAME} ]] ; then
                     logger "info" "ERROR: Variable BACKUP_DIR was not set properly, please ensure all required variables for non-persistent NFS backup option has been defined"
                     exit 1
                 fi
